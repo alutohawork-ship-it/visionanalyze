@@ -1,115 +1,315 @@
-<!DOCTYPE html>
-<html lang="id" class="dark">
+<!doctype html>
+<html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Chart Analyzer - Configuration</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: { 500: '#6366f1', 600: '#4f46e5' },
-            dark: { 900: '#0f172a', 800: '#1e293b', 700: '#334155' }
-          }
-        }
-      }
-    }
-  </script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI Signal Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0F1113; --surface:#171A1E; --surface-2:#1E2227; --line:#2A3036;
+  --text:#EDE7DA; --muted:#938D80;
+  --buy:#6FBF8A; --sell:#E8685A; --gold:#D4A853;
+}
+*{box-sizing:border-box}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "Instrument Sans",system-ui,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:24px 16px 56px;display:grid;gap:20px}
+@media(min-width:900px){.wrap{grid-template-columns:360px 1fr;align-items:start;padding-top:40px}}
+header{grid-column:1/-1}
+h1{font-family:Fraunces,Georgia,serif;font-weight:700;font-size:30px;margin:0 0 4px;letter-spacing:-.01em}
+.sub{margin:0;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;min-width:0}
+.label{font-size:13px;color:var(--muted);margin:0 0 8px}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mode{font:inherit;color:var(--text);background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;text-align:left;cursor:pointer}
+.mode small{display:block;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.mode[aria-pressed=true]{border-color:var(--gold);background:#2B2415}
+.pair{width:100%;font:inherit;color:var(--text);background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:11px 12px;text-transform:uppercase}
+.slots{display:grid;gap:10px;margin-top:16px}
+.slot{display:grid;place-items:center;min-height:110px;border:1px dashed #3C444C;border-radius:12px;background:var(--surface-2);cursor:pointer;overflow:hidden;color:var(--muted);font-size:14px;text-align:center;padding:8px}
+.slot img{display:block;width:100%;height:170px;object-fit:contain;background:#0B0D0F}
+.btn{width:100%;margin-top:18px;font:600 16px "Instrument Sans",sans-serif;color:#17130A;background:var(--gold);border:0;border-radius:12px;padding:14px;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+.err{color:var(--sell);font-size:14px;margin:12px 0 0}
+.empty{color:var(--muted);margin:0;padding:64px 0;text-align:center}
+.verdict{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.signal{font-family:Fraunces,Georgia,serif;font-weight:700;font-size:68px;line-height:1}
+.buy{color:var(--buy)}
+.sell{color:var(--sell)}
+.none{color:var(--muted);font-size:40px}
+.meter{width:180px;max-width:100%}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--gold);transition:width .4s}
+.levels{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:20px 0}
+.lvl{background:var(--surface-2);border-radius:12px;padding:10px 12px}
+.lvl b{display:block;font-weight:500;font-size:12px;color:var(--muted)}
+.lvl strong{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+.lvl small{color:var(--muted);font-size:12px;margin-left:4px}
+canvas{display:block;width:100%;height:340px;border-radius:12px}
+ul{margin:6px 0 0;padding-left:18px}
+li{margin:6px 0}
+.block{margin-top:20px}
+.block p{margin:0}
+.disc{color:var(--muted);font-size:12px;margin:18px 0 0}
+</style>
 </head>
-<body class="bg-dark-900 text-gray-100 min-h-screen flex items-center justify-center p-4">
+<body>
+<div class="wrap">
+  <header>
+    <h1>AI Signal Generator</h1>
+    <p class="sub">Unggah screenshot chart, dapatkan setup BUY atau SELL dengan entry, SL, dan TP1 sampai TP3.</p>
+  </header>
 
-  <div class="max-w-md w-full bg-dark-800 border border-slate-700/60 rounded-2xl p-6 shadow-2xl space-y-6">
-    <div class="text-center space-y-2">
-      <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-brand-500/10 text-brand-500 font-bold text-2xl border border-brand-500/20">
-        ⚡
-      </div>
-      <h1 class="text-xl font-bold text-white tracking-tight">AI Trading Terminal Setup</h1>
-      <p class="text-xs text-slate-400">Pilih gaya trading dan masukkan API Key OpenAI Anda untuk memulai.</p>
+  <section class="card" aria-label="Input">
+    <p class="label">Gaya trading</p>
+    <div class="modes" id="modes"></div>
+
+    <p class="label" style="margin-top:18px">Pair</p>
+    <input class="pair" id="pair" value="XAUUSD" maxlength="12" aria-label="Pair">
+
+    <div class="slots">
+      <label class="slot" id="slot-htf"><input type="file" accept="image/*" hidden><img alt="Chart HTF" hidden><span></span></label>
+      <label class="slot" id="slot-ltf"><input type="file" accept="image/*" hidden><img alt="Chart LTF" hidden><span></span></label>
     </div>
 
-    <form id="setupForm" onsubmit="handleStart(event)" class="space-y-5">
-      <!-- Input API Key -->
-      <div class="space-y-1.5">
-        <label class="text-xs font-medium text-slate-300">OpenAI API Key (Vision Supported)</label>
-        <input 
-          type="password" 
-          id="apiKeyInput" 
-          placeholder="sk-proj-..." 
-          required 
-          class="w-full bg-dark-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-white transition placeholder-slate-500"
-        />
-        <p class="text-[10px] text-slate-400">API key disimpan lokal di browser Anda (tidak dikirim ke server luar).</p>
-      </div>
+    <button class="btn" id="go" disabled>Analisa chart</button>
+    <p class="err" id="err" hidden></p>
+  </section>
 
-      <!-- Pilihan Trading Style -->
-      <div class="space-y-2">
-        <label class="text-xs font-medium text-slate-300">Pilih Gaya Trading & Timeframe</label>
-        <div class="grid grid-cols-2 gap-2.5">
-          
-          <label class="relative flex flex-col p-3 bg-dark-900 border border-slate-700 rounded-xl cursor-pointer hover:border-brand-500 transition has-[:checked]:border-brand-500 has-[:checked]:bg-brand-500/10">
-            <input type="radio" name="tradingStyle" value="Scalping (M1 + M15)" checked class="sr-only" />
-            <span class="text-xs font-bold text-white">Scalping</span>
-            <span class="text-[10px] text-brand-500 mt-1 font-semibold">M1 (LTF) + M15 (HTF)</span>
-          </label>
-
-          <label class="relative flex flex-col p-3 bg-dark-900 border border-slate-700 rounded-xl cursor-pointer hover:border-brand-500 transition has-[:checked]:border-brand-500 has-[:checked]:bg-brand-500/10">
-            <input type="radio" name="tradingStyle" value="Day Trade (M3 + M30)" class="sr-only" />
-            <span class="text-xs font-bold text-white">Day Trade</span>
-            <span class="text-[10px] text-brand-500 mt-1 font-semibold">M3 (LTF) + M30 (HTF)</span>
-          </label>
-
-          <label class="relative flex flex-col p-3 bg-dark-900 border border-slate-700 rounded-xl cursor-pointer hover:border-brand-500 transition has-[:checked]:border-brand-500 has-[:checked]:bg-brand-500/10">
-            <input type="radio" name="tradingStyle" value="Intraday (M5 + H1)" class="sr-only" />
-            <span class="text-xs font-bold text-white">Intraday</span>
-            <span class="text-[10px] text-brand-500 mt-1 font-semibold">M5 (LTF) + H1 (HTF)</span>
-          </label>
-
-          <label class="relative flex flex-col p-3 bg-dark-900 border border-slate-700 rounded-xl cursor-pointer hover:border-brand-500 transition has-[:checked]:border-brand-500 has-[:checked]:bg-brand-500/10">
-            <input type="radio" name="tradingStyle" value="Swing (M15 + H4)" class="sr-only" />
-            <span class="text-xs font-bold text-white">Swing</span>
-            <span class="text-[10px] text-brand-500 mt-1 font-semibold">M15 (LTF) + H4 (HTF)</span>
-          </label>
-
+  <section class="card" aria-live="polite">
+    <p class="empty" id="empty">Hasil sinyal akan muncul di sini.</p>
+    <div id="result" hidden>
+      <div class="verdict">
+        <div>
+          <p class="label" id="meta"></p>
+          <div class="signal" id="sig"></div>
+        </div>
+        <div class="meter">
+          <p class="label">Keyakinan <span id="conf"></span>%</p>
+          <div class="bar"><i id="confBar"></i></div>
+          <p class="label" style="margin:12px 0 0">Bias HTF: <span id="bias"></span></p>
         </div>
       </div>
 
-      <!-- Submit Button -->
-      <button 
-        type="submit" 
-        class="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 rounded-xl transition duration-200 text-sm shadow-lg shadow-brand-500/25 active:scale-[0.99]"
-      >
-        Buka Terminal Analisis ➔
-      </button>
-    </form>
-  </div>
+      <div class="levels" id="levels"></div>
+      <canvas id="ladder" role="img" aria-label="Grafik level entry, stop loss, dan target"></canvas>
 
-  <script>
-    // Cek jika API key sudah tersimpan sebelumnya
-    document.addEventListener('DOMContentLoaded', () => {
-      const savedKey = localStorage.getItem('openai_api_key');
-      if (savedKey) document.getElementById('apiKeyInput').value = savedKey;
-    });
+      <div class="block"><p class="label">Alasan entry</p><ul id="reasons"></ul></div>
+      <div class="block"><p class="label">Invalidasi</p><p id="inv"></p></div>
+      <div class="block"><p class="label">Ringkasan</p><p id="summary"></p></div>
 
-    function handleStart(e) {
-      e.preventDefault();
-      const apiKey = document.getElementById('apiKeyInput').value.trim();
-      const selectedStyle = document.querySelector('input[name="tradingStyle"]:checked').value;
+      <button class="btn ghost" id="copy">Salin sinyal</button>
+      <p class="disc">Hasil AI adalah alat bantu analisa, bukan jaminan profit. Cocokkan harga dengan chart broker kamu sebelum eksekusi.</p>
+    </div>
+  </section>
+</div>
 
-      if (!apiKey) {
-        alert('Harap masukkan OpenAI API Key terlebih dahulu!');
-        return;
-      }
+<script>
+const MODES = [
+  { id: "scalping", label: "Scalping",    htf: "M15", ltf: "M1" },
+  { id: "daytrade", label: "Day Trading", htf: "M30", ltf: "M3" },
+  { id: "intraday", label: "Intraday",    htf: "H1",  ltf: "M5" },
+  { id: "swing",    label: "Swing",       htf: "H4",  ltf: "M15" },
+];
+const $ = id => document.getElementById(id);
+const imgs = { htf: null, ltf: null };
+let mode = MODES[0], last = null;
 
-      // Simpan konfigurasi ke LocalStorage
-      localStorage.setItem('openai_api_key', apiKey);
-      localStorage.setItem('trading_style', selectedStyle);
+const fmt = v => v == null ? "–" : Number(v).toFixed(v >= 100 ? 2 : v >= 10 ? 3 : 5);
+const showErr = msg => { $("err").textContent = msg; $("err").hidden = !msg; };
 
-      // Pindah ke Halaman Dashboard
-      window.location.href = 'dashboard.html';
+// Mode picker
+$("modes").innerHTML = MODES.map(m =>
+  `<button class="mode" data-id="${m.id}">${m.label}<small>${m.htf} + ${m.ltf}</small></button>`).join("");
+$("modes").onclick = e => { const b = e.target.closest(".mode"); if (b) selectMode(b.dataset.id); };
+
+function selectMode(id) {
+  mode = MODES.find(m => m.id === id);
+  document.querySelectorAll(".mode").forEach(b => b.setAttribute("aria-pressed", b.dataset.id === id));
+  $("slot-htf").querySelector("span").textContent = `Chart HTF ${mode.htf}. Ketuk untuk unggah`;
+  $("slot-ltf").querySelector("span").textContent = `Chart LTF ${mode.ltf}. Ketuk untuk unggah`;
+}
+
+// Resize to max 1600px JPEG so uploads stay small for the serverless body limit
+function compress(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, 1600 / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * s);
+      c.height = Math.round(img.height * s);
+      const g = c.getContext("2d");
+      g.fillStyle = "#fff";
+      g.fillRect(0, 0, c.width, c.height);
+      g.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL("image/jpeg", 0.85));
+    };
+    img.onerror = () => reject(new Error("Gambar tidak bisa dibaca. Pakai PNG atau JPG."));
+    img.src = url;
+  });
+}
+
+for (const key of ["htf", "ltf"]) {
+  const slot = $("slot-" + key);
+  slot.querySelector("input").onchange = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      imgs[key] = await compress(file);
+      const img = slot.querySelector("img");
+      img.src = imgs[key];
+      img.hidden = false;
+      slot.querySelector("span").hidden = true;
+      showErr("");
+    } catch (err) {
+      showErr(err.message);
     }
-  </script>
+    $("go").disabled = !(imgs.htf && imgs.ltf);
+  };
+}
+
+// Analyze
+$("go").onclick = async () => {
+  const btn = $("go");
+  btn.disabled = true;
+  btn.textContent = "Membaca chart…";
+  showErr("");
+  try {
+    const res = await fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pair: $("pair").value, mode: mode.id, images: [imgs.htf, imgs.ltf] }),
+    });
+    const data = await res.json().catch(() => ({ error: "Server tidak merespons. Coba lagi." }));
+    if (!res.ok) throw new Error(data.error || "Analisa gagal.");
+    last = data;
+    render(data);
+  } catch (err) {
+    showErr(err.message);
+  } finally {
+    btn.textContent = "Analisa chart";
+    btn.disabled = !(imgs.htf && imgs.ltf);
+  }
+};
+
+function render(d) {
+  const pair = $("pair").value.trim().toUpperCase() || "–";
+  $("empty").hidden = true;
+  $("result").hidden = false;
+  $("meta").textContent = `${pair}, ${mode.label}, ${mode.htf} dan ${mode.ltf}`;
+
+  const sig = $("sig");
+  sig.className = "signal " + (d.signal === "BUY" ? "buy" : d.signal === "SELL" ? "sell" : "none");
+  sig.textContent = d.signal === "NO_TRADE" ? "Tunggu" : d.signal;
+
+  $("conf").textContent = d.confidence;
+  $("confBar").style.width = d.confidence + "%";
+  $("bias").textContent = { BULLISH: "Naik", BEARISH: "Turun", RANGE: "Sideways" }[d.bias];
+
+  const rows = [["Entry", d.entry], ["Stop loss", d.stop_loss], ["TP1", d.tp1, 0], ["TP2", d.tp2, 1], ["TP3", d.tp3, 2]];
+  $("levels").innerHTML = rows.map(([k, v, i]) =>
+    `<div class="lvl"><b>${k}</b><strong>${fmt(v)}</strong>${i !== undefined && d.rr ? `<small>RR ${d.rr[i]}</small>` : ""}</div>`
+  ).join("");
+
+  $("reasons").replaceChildren(...d.reason_entry.map(t =>
+    Object.assign(document.createElement("li"), { textContent: t })));
+  $("inv").textContent = d.invalidation;
+  $("summary").textContent = d.summary;
+
+  requestAnimationFrame(() => drawLadder(d));
+}
+
+// Generated chart: price ladder with entry, SL, TP levels and key levels from the analysis
+function drawLadder(d) {
+  const cv = $("ladder"), dpr = window.devicePixelRatio || 1;
+  const W = cv.clientWidth, H = cv.clientHeight;
+  cv.width = W * dpr;
+  cv.height = H * dpr;
+  const g = cv.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.fillStyle = "#1E2227";
+  g.fillRect(0, 0, W, H);
+  g.font = "12px 'Instrument Sans', sans-serif";
+
+  const lines = [
+    ...d.key_levels.map(k => ({ t: k.label, p: k.price, c: "#938D80", dash: [4, 4] })),
+    { t: "TP3", p: d.tp3, c: "#6FBF8A" },
+    { t: "TP2", p: d.tp2, c: "#6FBF8A" },
+    { t: "TP1", p: d.tp1, c: "#6FBF8A" },
+    { t: "Entry", p: d.entry, c: "#D4A853", w: 2 },
+    { t: "SL", p: d.stop_loss, c: "#E8685A", w: 2 },
+  ].filter(l => Number.isFinite(l.p));
+
+  if (!lines.length) {
+    g.fillStyle = "#938D80";
+    g.fillText("Tidak ada level untuk digambar", 14, H / 2);
+    return;
+  }
+
+  const ps = lines.map(l => l.p);
+  let lo = Math.min(...ps), hi = Math.max(...ps);
+  const pad = (hi - lo) * 0.12 || hi * 0.001;
+  lo -= pad; hi += pad;
+  const top = 16, bot = H - 16;
+  const Y = p => top + ((hi - p) / (hi - lo)) * (bot - top);
+
+  if (d.signal !== "NO_TRADE") {
+    const band = (a, b, c) => {
+      g.fillStyle = c;
+      g.fillRect(0, Math.min(Y(a), Y(b)), W, Math.abs(Y(a) - Y(b)));
+    };
+    band(d.entry, d.stop_loss, "rgba(232,104,90,.14)");
+    band(d.entry, d.tp3, "rgba(111,191,138,.10)");
+  }
+
+  g.textBaseline = "bottom";
+  for (const l of lines) {
+    const y = Y(l.p);
+    g.strokeStyle = l.c;
+    g.lineWidth = l.w || 1;
+    g.setLineDash(l.dash || []);
+    g.beginPath();
+    g.moveTo(0, y);
+    g.lineTo(W, y);
+    g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = l.c;
+    g.textAlign = "left";
+    g.fillText(l.t, 12, y - 4);
+    g.textAlign = "right";
+    g.fillText(fmt(l.p), W - 12, y - 4);
+  }
+}
+
+window.addEventListener("resize", () => { if (last) drawLadder(last); });
+
+// Copy signal text
+$("copy").onclick = async () => {
+  const d = last;
+  if (!d) return;
+  const p = $("pair").value.trim().toUpperCase();
+  const head = `${p} ${mode.label} (${mode.htf}/${mode.ltf})`;
+  const text = d.signal === "NO_TRADE"
+    ? `${head}: tidak ada setup`
+    : `${head} ${d.signal}\nEntry ${fmt(d.entry)}\nSL ${fmt(d.stop_loss)}\nTP1 ${fmt(d.tp1)}\nTP2 ${fmt(d.tp2)}\nTP3 ${fmt(d.tp3)}`;
+  try {
+    await navigator.clipboard.writeText(text);
+    $("copy").textContent = "Tersalin";
+  } catch {
+    showErr("Browser menolak akses clipboard.");
+  }
+  setTimeout(() => { $("copy").textContent = "Salin sinyal"; }, 1600);
+};
+
+selectMode("scalping");
+</script>
 </body>
 </html>
