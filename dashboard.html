@@ -113,19 +113,19 @@
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div class="bg-dark-900/80 p-3 rounded-xl border border-slate-700/50">
           <span class="text-[10px] text-slate-400 block font-medium">Entry Area</span>
-          <span id="resEntry" class="text-sm font-bold text-white">2745.20 - 2746.50</span>
+          <span id="resEntry" class="text-sm font-bold text-white">-</span>
         </div>
         <div class="bg-dark-900/80 p-3 rounded-xl border border-slate-700/50">
           <span class="text-[10px] text-red-400 block font-medium">Stop Loss (SL)</span>
-          <span id="resSL" class="text-sm font-bold text-red-400">2741.00</span>
+          <span id="resSL" class="text-sm font-bold text-red-400">-</span>
         </div>
         <div class="bg-dark-900/80 p-3 rounded-xl border border-slate-700/50">
           <span class="text-[10px] text-emerald-400 block font-medium">Take Profit 1 (TP1)</span>
-          <span id="resTP1" class="text-sm font-bold text-emerald-400">2752.00</span>
+          <span id="resTP1" class="text-sm font-bold text-emerald-400">-</span>
         </div>
         <div class="bg-dark-900/80 p-3 rounded-xl border border-slate-700/50">
           <span class="text-[10px] text-brand-500 block font-medium">Risk : Reward</span>
-          <span id="resRRR" class="text-sm font-bold text-brand-500">1 : 2.5</span>
+          <span id="resRRR" class="text-sm font-bold text-brand-500">-</span>
         </div>
       </div>
 
@@ -133,11 +133,11 @@
       <div class="grid grid-cols-2 gap-3">
         <div class="bg-dark-900/50 p-2.5 rounded-lg border border-slate-800">
           <span class="text-[10px] text-slate-400 block">Take Profit 2 (TP2)</span>
-          <span id="resTP2" class="text-xs font-semibold text-slate-200">2758.00</span>
+          <span id="resTP2" class="text-xs font-semibold text-slate-200">-</span>
         </div>
         <div class="bg-dark-900/50 p-2.5 rounded-lg border border-slate-800">
           <span class="text-[10px] text-slate-400 block">Take Profit 3 (TP3)</span>
-          <span id="resTP3" class="text-xs font-semibold text-slate-200">2765.00</span>
+          <span id="resTP3" class="text-xs font-semibold text-slate-200">-</span>
         </div>
       </div>
 
@@ -173,16 +173,40 @@
       document.getElementById('activeStyleDisplay').innerText = tradingStyle;
     });
 
+    // Fungsi kompresi otomatis gambar agar ukuran request tidak terlalu besar (mencegah Failed to fetch)
     function handleImageUpload(e, type) {
       const file = e.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = function(evt) {
-        images[type] = evt.target.result;
-        document.getElementById(`img${type}`).src = evt.target.result;
-        document.getElementById(`preview${type}`).classList.remove('hidden');
-        document.getElementById(`placeholder${type}`).classList.add('hidden');
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Batasi resolusi maksimal lebar 1024px agar ringan dan cepat diproses OpenAI
+          const maxWidth = 1024;
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Konversi ke format JPEG terkompresi
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          
+          images[type] = compressedDataUrl;
+          document.getElementById(`img${type}`).src = compressedDataUrl;
+          document.getElementById(`preview${type}`).classList.remove('hidden');
+          document.getElementById(`placeholder${type}`).classList.add('hidden');
+        };
+        img.src = evt.target.result;
       };
       reader.readAsDataURL(file);
     }
@@ -191,7 +215,7 @@
       event.stopPropagation();
       images[type] = null;
       document.getElementById(`preview${type}`).classList.add('hidden');
-      document.getElementById(`placeholder${type}`).classList.remove('hidden');
+      document.getElementById(`placeholder${type}`).classList.add('hidden');
     }
 
     async function runAIAnalysis() {
@@ -208,7 +232,6 @@
       loading.classList.remove('hidden');
       resultCard.classList.add('hidden');
 
-      // Prompt Khusus OpenAI Vision
       const systemPrompt = `Anda adalah Analis SMC (Smart Money Concepts) & Price Action Institusional Senior.
 Tugas Anda: Analisis screenshot chart yang diberikan.
 
