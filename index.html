@@ -1,774 +1,115 @@
-```html
 <!DOCTYPE html>
 <html lang="id" class="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chart Analyzer Terminal</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Plus Jakarta Sans', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    },
-                    colors: {
-                        trade: {
-                            dark: '#0B0E14',
-                            card: '#121721',
-                            border: '#1E2638',
-                            accent: '#6366F1',
-                            bull: '#10B981',
-                            bear: '#EF4444',
-                            warning: '#F59E0B',
-                        }
-                    }
-                }
-            }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Chart Analyzer - Configuration</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 500: '#6366f1', 600: '#4f46e5' },
+            dark: { 900: '#0f172a', 800: '#1e293b', 700: '#334155' }
+          }
         }
-    </script>
-    <style>
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #0B0E14; }
-        ::-webkit-scrollbar-thumb { background: #1E2638; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #374151; }
-
-        .glass-panel {
-            background: rgba(18, 23, 33, 0.85);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .drag-active {
-            border-color: #6366F1 !important;
-            background-color: rgba(99, 102, 241, 0.12) !important;
-        }
-
-        .glow-bull { box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.25); }
-        .glow-bear { box-shadow: 0 0 25px -5px rgba(239, 68, 68, 0.25); }
-
-        .scan-line {
-            background: linear-gradient(to bottom, transparent, rgba(99, 102, 241, 0.35), transparent);
-            animation: scan 2.2s infinite linear;
-        }
-
-        @keyframes scan {
-            0% { top: 0%; }
-            100% { top: 100%; }
-        }
-    </style>
+      }
+    }
+  </script>
 </head>
-<body class="bg-trade-dark text-slate-200 font-sans min-h-screen antialiased flex flex-col">
+<body class="bg-dark-900 text-gray-100 min-h-screen flex items-center justify-center p-4">
 
-    <!-- Header / Navbar -->
-    <header class="border-b border-trade-border bg-trade-card/90 sticky top-0 z-40 backdrop-blur-md">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="p-2 bg-indigo-600/20 border border-indigo-500/30 rounded-xl text-indigo-400">
-                    <i data-lucide="candlestick-chart" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <h1 class="font-bold text-lg text-white tracking-tight flex items-center gap-2">
-                        AI ScalpVision <span class="text-[10px] font-mono font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full">GPT-4o Vision</span>
-                    </h1>
-                    <p class="text-xs text-slate-400">SMC / Price Action Multi-Timeframe Signal Terminal</p>
-                </div>
-            </div>
-
-            <div class="flex items-center space-x-3">
-                <button onclick="toggleModal('promptModal')" class="text-xs flex items-center gap-1.5 px-3 py-2 bg-trade-border/60 hover:bg-trade-border text-slate-300 rounded-lg transition font-medium border border-slate-700/50">
-                    <i data-lucide="terminal" class="w-4 h-4 text-indigo-400"></i>
-                    <span class="hidden sm:inline">System Prompt</span>
-                </button>
-
-                <button onclick="toggleModal('apiKeyModal')" id="apiKeyBtn" class="text-xs flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition border border-slate-700">
-                    <i data-lucide="key" class="w-4 h-4 text-amber-400"></i>
-                    <span id="apiKeyStatusText" class="font-mono">Set OpenAI Key</span>
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <!-- Main Workspace -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-        <!-- LEFT COLUMN: Settings & Uploads -->
-        <div class="lg:col-span-5 space-y-6">
-
-            <!-- Trading Mode Selector -->
-            <div class="glass-panel rounded-2xl p-5 space-y-4">
-                <div class="flex justify-between items-center">
-                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                        <i data-lucide="sliders" class="w-4 h-4 text-indigo-400"></i> Gaya Trading
-                    </label>
-                    <span id="strategyBadge" class="text-xs font-mono px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded font-bold">SCALPING</span>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2" id="modeSelector">
-                    <button type="button" onclick="setTradingMode('scalp')" id="btn-scalp" class="mode-btn active p-3 rounded-xl border border-indigo-500/50 bg-indigo-600/10 text-left transition relative group">
-                        <div class="font-semibold text-sm text-white">Scalping</div>
-                        <div class="text-xs text-slate-400 font-mono mt-0.5">M15 (HTF) + M1 (LTF)</div>
-                    </button>
-                    <button type="button" onclick="setTradingMode('day')" id="btn-day" class="mode-btn p-3 rounded-xl border border-trade-border bg-slate-900/50 hover:border-slate-700 text-left transition group">
-                        <div class="font-semibold text-sm text-slate-300 group-hover:text-white">Day Trade</div>
-                        <div class="text-xs text-slate-400 font-mono mt-0.5">M30 (HTF) + M3 (LTF)</div>
-                    </button>
-                    <button type="button" onclick="setTradingMode('intraday')" id="btn-intraday" class="mode-btn p-3 rounded-xl border border-trade-border bg-slate-900/50 hover:border-slate-700 text-left transition group">
-                        <div class="font-semibold text-sm text-slate-300 group-hover:text-white">Intraday</div>
-                        <div class="text-xs text-slate-400 font-mono mt-0.5">H1 (HTF) + M5 (LTF)</div>
-                    </button>
-                    <button type="button" onclick="setTradingMode('swing')" id="btn-swing" class="mode-btn p-3 rounded-xl border border-trade-border bg-slate-900/50 hover:border-slate-700 text-left transition group">
-                        <div class="font-semibold text-sm text-slate-300 group-hover:text-white">Swing</div>
-                        <div class="text-xs text-slate-400 font-mono mt-0.5">H4 (HTF) + M15 (LTF)</div>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Upload Zones -->
-            <div class="space-y-4">
-
-                <!-- HTF Upload Zone -->
-                <div class="glass-panel rounded-2xl p-4 border border-trade-border">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-xs font-semibold text-indigo-400 flex items-center gap-1.5 font-mono">
-                            <i data-lucide="layers" class="w-3.5 h-3.5"></i> HIGHER TIMEFRAME (<span id="htfLabel">M15</span>)
-                        </span>
-                        <span class="text-[10px] text-slate-400">Context & Structure</span>
-                    </div>
-
-                    <div id="dropZoneHTF" class="group relative border-2 border-dashed border-slate-700 hover:border-indigo-500/60 bg-slate-950/40 rounded-xl p-4 text-center cursor-pointer transition flex flex-col items-center justify-center min-h-[140px] overflow-hidden">
-                        <input type="file" id="fileHTF" accept="image/*" class="hidden" onchange="handleFileSelect(event, 'HTF')">
-                        
-                        <div id="placeholderHTF" class="space-y-2 pointer-events-none">
-                            <div class="w-10 h-10 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center mx-auto group-hover:scale-110 transition">
-                                <i data-lucide="upload-cloud" class="w-5 h-5"></i>
-                            </div>
-                            <p class="text-xs text-slate-300">Klik / Drop / Paste Chart <span id="htfTextSpan" class="text-indigo-400 font-semibold">M15</span></p>
-                            <p class="text-[10px] text-slate-400">PNG, JPG, WEBP (Bisa Ctrl+V)</p>
-                        </div>
-
-                        <div id="previewHTFContainer" class="hidden absolute inset-0 bg-slate-950 flex items-center justify-center p-2">
-                            <img id="previewHTF" src="" alt="HTF Chart" class="h-full w-full object-contain rounded">
-                            <button type="button" onclick="removeImage(event, 'HTF')" class="absolute top-2 right-2 bg-red-600/90 hover:bg-red-700 text-white p-1.5 rounded-lg shadow-lg backdrop-blur z-20">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
-                            <div class="absolute bottom-2 left-2 bg-slate-900/90 px-2 py-0.5 rounded text-[10px] font-mono text-indigo-400 border border-slate-700" id="badgeHTF">M15</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- LTF Upload Zone -->
-                <div class="glass-panel rounded-2xl p-4 border border-trade-border">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-xs font-semibold text-amber-400 flex items-center gap-1.5 font-mono">
-                            <i data-lucide="zap" class="w-3.5 h-3.5"></i> LOWER TIMEFRAME (<span id="ltfLabel">M1</span>)
-                        </span>
-                        <span class="text-[10px] text-slate-400">Entry & Trigger</span>
-                    </div>
-
-                    <div id="dropZoneLTF" class="group relative border-2 border-dashed border-slate-700 hover:border-amber-500/60 bg-slate-950/40 rounded-xl p-4 text-center cursor-pointer transition flex flex-col items-center justify-center min-h-[140px] overflow-hidden">
-                        <input type="file" id="fileLTF" accept="image/*" class="hidden" onchange="handleFileSelect(event, 'LTF')">
-                        
-                        <div id="placeholderLTF" class="space-y-2 pointer-events-none">
-                            <div class="w-10 h-10 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto group-hover:scale-110 transition">
-                                <i data-lucide="upload-cloud" class="w-5 h-5"></i>
-                            </div>
-                            <p class="text-xs text-slate-300">Klik / Drop / Paste Chart <span id="ltfTextSpan" class="text-amber-400 font-semibold">M1</span></p>
-                            <p class="text-[10px] text-slate-400">PNG, JPG, WEBP (Bisa Ctrl+V)</p>
-                        </div>
-
-                        <div id="previewLTFContainer" class="hidden absolute inset-0 bg-slate-950 flex items-center justify-center p-2">
-                            <img id="previewLTF" src="" alt="LTF Chart" class="h-full w-full object-contain rounded">
-                            <button type="button" onclick="removeImage(event, 'LTF')" class="absolute top-2 right-2 bg-red-600/90 hover:bg-red-700 text-white p-1.5 rounded-lg shadow-lg backdrop-blur z-20">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
-                            <div class="absolute bottom-2 left-2 bg-slate-900/90 px-2 py-0.5 rounded text-[10px] font-mono text-amber-400 border border-slate-700" id="badgeLTF">M1</div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- Additional Meta Input -->
-            <div class="glass-panel rounded-2xl p-4 space-y-3">
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="text-[11px] font-medium text-slate-400 block mb-1">Pair/Symbol (Optional)</label>
-                        <input type="text" id="assetPair" placeholder="Auto-detect dari chart" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-indigo-500 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="text-[11px] font-medium text-slate-400 block mb-1">Catatan Tambahan</label>
-                        <input type="text" id="userNotes" placeholder="Misal: Jelang News CPI" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="flex gap-3">
-                <button type="button" onclick="analyzeCharts()" id="analyzeBtn" class="flex-1 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-semibold py-3.5 px-4 rounded-xl shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition active:scale-[0.99]">
-                    <i data-lucide="sparkles" class="w-4 h-4"></i>
-                    <span>Analisa Chart AI</span>
-                </button>
-                <button type="button" onclick="loadDemoData()" class="px-4 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-xl transition text-xs font-mono border border-emerald-500/30 flex flex-col items-center justify-center font-bold" title="Uji Coba Tampilan Sinyal">
-                    <i data-lucide="play-circle" class="w-4 h-4 mb-0.5"></i>
-                    <span>Demo</span>
-                </button>
-            </div>
-
-        </div>
-
-        <!-- RIGHT COLUMN: Interactive Signal Output -->
-        <div class="lg:col-span-7 flex flex-col space-y-6">
-
-            <!-- Default Empty State -->
-            <div id="emptyState" class="glass-panel rounded-2xl p-8 flex flex-col items-center justify-center text-center flex-1 min-h-[420px]">
-                <div class="w-16 h-16 bg-slate-800/60 rounded-2xl border border-slate-700/60 flex items-center justify-center text-indigo-400 mb-4 shadow-inner">
-                    <i data-lucide="cpu" class="w-8 h-8"></i>
-                </div>
-                <h3 class="text-base font-semibold text-white mb-1">Terminal Siap Menganalisa</h3>
-                <p class="text-xs text-slate-400 max-w-sm mb-6 leading-relaxed">
-                    Upload screenshot chart HTF (Struktur) & LTF (Entry Trigger) lalu klik **Analisa Chart AI** atau gunakan **Demo** untuk mencoba.
-                </p>
-                <div class="flex flex-wrap justify-center gap-2 text-[11px] font-mono text-slate-400">
-                    <span class="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-lg"> Orderblock</span>
-                    <span class="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-lg"> Fair Value Gap (FVG)</span>
-                    <span class="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-lg"> Liquidity Sweep</span>
-                </div>
-            </div>
-
-            <!-- Loading Scanner -->
-            <div id="loadingState" class="hidden glass-panel rounded-2xl p-8 flex flex-col items-center justify-center text-center flex-1 min-h-[420px] relative overflow-hidden">
-                <div class="scan-line absolute inset-x-0 h-16"></div>
-                <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mb-4 animate-pulse">
-                    <i data-lucide="line-chart" class="w-8 h-8"></i>
-                </div>
-                <h3 class="text-base font-semibold text-white mb-1 animate-pulse">Memproses Analisa Multi-Timeframe...</h3>
-                <p class="text-xs text-slate-400 max-w-sm font-mono" id="loadingStepText">Membaca Struktur HTF & Area Entry LTF...</p>
-            </div>
-
-            <!-- Signal Result Terminal -->
-            <div id="resultCard" class="hidden flex-1 space-y-6">
-
-                <!-- Main Signal Card -->
-                <div id="signalBanner" class="glass-panel rounded-2xl p-6 relative overflow-hidden transition border-2 border-emerald-500/30 glow-bull">
-                    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-trade-border/80 pb-5">
-                        <div>
-                            <div class="flex items-center gap-2 mb-1">
-                                <span id="resAsset" class="font-mono text-xs px-2 py-0.5 bg-slate-800 text-slate-300 rounded border border-slate-700">XAUUSD</span>
-                                <span id="resStrategy" class="font-mono text-xs px-2 py-0.5 bg-indigo-500/10 text-indigo-400 rounded border border-indigo-500/20">SCALPING (M15/M1)</span>
-                                <span id="resTime" class="text-[10px] font-mono text-slate-400">Just Now</span>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <h2 id="resSignalType" class="text-3xl font-extrabold tracking-tight text-emerald-400 font-mono flex items-center gap-2">
-                                    BUY / LONG
-                                </h2>
-                                <span id="resConfidence" class="text-xs px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full font-mono">Key Zone Hit (88%)</span>
-                            </div>
-                        </div>
-
-                        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex flex-col items-end justify-center min-w-[120px]">
-                            <span class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Risk : Reward</span>
-                            <span id="resRRR" class="text-xl font-bold font-mono text-amber-400">1 : 3.2</span>
-                        </div>
-                    </div>
-
-                    <!-- Price Levels -->
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-5">
-                        <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3.5 relative">
-                            <div class="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
-                                <span>Area Entry</span>
-                                <i data-lucide="target" class="w-3.5 h-3.5 text-indigo-400"></i>
-                            </div>
-                            <div id="resEntry" class="font-mono font-bold text-base text-indigo-300">2384.50 - 2386.10</div>
-                            <div class="text-[10px] text-slate-400 mt-1 font-mono">Limit / Market Confirmation</div>
-                        </div>
-
-                        <div class="bg-slate-950/60 border border-red-500/20 rounded-xl p-3.5 relative">
-                            <div class="text-[10px] font-medium text-red-400 uppercase tracking-wider mb-1 flex items-center justify-between">
-                                <span>Stop Loss (SL)</span>
-                                <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-red-400"></i>
-                            </div>
-                            <div id="resSL" class="font-mono font-bold text-base text-red-400">2381.80</div>
-                            <div class="text-[10px] text-red-400/80 mt-1 font-mono">Batas Invalidasi</div>
-                        </div>
-
-                        <div class="bg-slate-950/60 border border-emerald-500/20 rounded-xl p-3.5 relative">
-                            <div class="text-[10px] font-medium text-emerald-400 uppercase tracking-wider mb-1 flex items-center justify-between">
-                                <span>Take Profit (TP)</span>
-                                <i data-lucide="trending-up" class="w-3.5 h-3.5 text-emerald-400"></i>
-                            </div>
-                            <div class="space-y-1 font-mono text-xs">
-                                <div class="flex justify-between"><span class="text-slate-400">TP1:</span> <span id="resTP1" class="font-bold text-emerald-300">2390.00</span></div>
-                                <div class="flex justify-between"><span class="text-slate-400">TP2:</span> <span id="resTP2" class="font-bold text-emerald-400">2394.50</span></div>
-                                <div class="flex justify-between"><span class="text-slate-400">TP3:</span> <span id="resTP3" class="font-bold text-emerald-500">2399.00</span></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Analysis Rationale -->
-                <div class="glass-panel rounded-2xl p-6 space-y-4">
-                    <h3 class="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2 border-b border-trade-border pb-3">
-                        <i data-lucide="file-text" class="w-4 h-4 text-indigo-400"></i> Alasan & Analisa Setup
-                    </h3>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 space-y-2">
-                            <h4 class="text-xs font-semibold text-indigo-400 flex items-center gap-1.5 font-mono">
-                                <i data-lucide="compass" class="w-3.5 h-3.5"></i> Analisa Struktur HTF (<span id="rationaleHtfLabel">M15</span>)
-                            </h4>
-                            <p id="resHTFReason" class="text-xs text-slate-300 leading-relaxed font-sans">
-                                Tren utama menunjukkan Bullish Market Structure. Harga telah mengambil liquidity low dan mantul tepat dari Demand Orderblock M15.
-                            </p>
-                        </div>
-
-                        <div class="bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 space-y-2">
-                            <h4 class="text-xs font-semibold text-amber-400 flex items-center gap-1.5 font-mono">
-                                <i data-lucide="crosshair" class="w-3.5 h-3.5"></i> Trigger Entry LTF (<span id="rationaleLtfLabel">M1</span>)
-                            </h4>
-                            <p id="resLTFReason" class="text-xs text-slate-300 leading-relaxed font-sans">
-                                Terjadi Change of Character (ChoCh) di M1 setelah sweep liquidity. Terdapat Fair Value Gap (FVG) segar di area entry yang ideal untuk retreacement entry.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 space-y-2">
-                        <h4 class="text-xs font-semibold text-slate-300 flex items-center gap-1.5 font-mono">
-                            <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-400"></i> Aturan Eksekusi & Invalidation
-                        </h4>
-                        <ul id="resInvalidationRules" class="text-xs text-slate-400 space-y-1.5 list-disc list-inside leading-relaxed">
-                            <li>Pindahkan SL ke Breakeven (BE) begitu TP1 tersentuh.</li>
-                            <li>Batal jika harga melewai batas SL sebelum masuk area entry.</li>
-                            <li>Gunakan resiko maksimal 1% per posisi.</li>
-                        </ul>
-                    </div>
-                </div>
-
-            </div>
-
-        </div>
-
-    </main>
-
-    <!-- PROMPT MODAL -->
-    <div id="promptModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="glass-panel border border-slate-700 rounded-2xl max-w-3xl w-full p-6 space-y-4 max-h-[90vh] flex flex-col shadow-2xl">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="terminal" class="w-5 h-5 text-indigo-400"></i>
-                    <h3 class="text-base font-bold text-white">System Prompt OpenAI Vision</h3>
-                </div>
-                <button onclick="toggleModal('promptModal')" class="text-slate-400 hover:text-white">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
-
-            <div class="relative flex-1 bg-slate-950 rounded-xl border border-slate-800 p-4 font-mono text-xs text-slate-300 overflow-y-auto max-h-[380px]" id="promptContent">
-<pre class="whitespace-pre-wrap">You are an expert Smart Money Concepts (SMC) & Institutional Price Action trader.
-Analyze 2 charts provided:
-1. Higher Timeframe Chart (Context & Key Zones)
-2. Lower Timeframe Chart (Trigger & Entry Zone)
-
-Task:
-- Auto detect the currency/crypto pair symbol directly from chart watermark or headers.
-- Determine Trend Bias (BUY / SELL / NEUTRAL).
-- Identify precise Entry Zone, Stop Loss (SL), and 3 Take Profit (TP) targets.
-- Calculate Risk to Reward Ratio (RRR).
-
-Return JSON format ONLY:
-{
-  "pair": "AUTO DETECTED SYMBOL",
-  "signal": "BUY" | "SELL" | "NEUTRAL",
-  "confidence": "85%",
-  "entry": "2384.50 - 2386.10",
-  "sl": "2381.80",
-  "tp1": "2390.00",
-  "tp2": "2394.50",
-  "tp3": "2399.00",
-  "rrr": "1:3.2",
-  "htfAnalysis": "HTF SMC reasoning...",
-  "ltfAnalysis": "LTF trigger reasoning...",
-  "executionRules": ["Rule 1", "Rule 2"]
-}</pre>
-            </div>
-
-            <div class="flex justify-end gap-3 pt-2">
-                <button onclick="copySystemPrompt()" id="copyPromptBtn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
-                    <i data-lucide="copy" class="w-4 h-4"></i> Copy Prompt
-                </button>
-            </div>
-        </div>
+  <div class="max-w-md w-full bg-dark-800 border border-slate-700/60 rounded-2xl p-6 shadow-2xl space-y-6">
+    <div class="text-center space-y-2">
+      <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-brand-500/10 text-brand-500 font-bold text-2xl border border-brand-500/20">
+        ⚡
+      </div>
+      <h1 class="text-xl font-bold text-white tracking-tight">AI Trading Terminal Setup</h1>
+      <p class="text-xs text-slate-400">Pilih gaya trading dan masukkan API Key OpenAI Anda untuk memulai.</p>
     </div>
 
-    <!-- API KEY MODAL -->
-    <div id="apiKeyModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="glass-panel border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="key" class="w-5 h-5 text-amber-400"></i>
-                    <h3 class="text-base font-bold text-white">Masukkan OpenAI API Key</h3>
-                </div>
-                <button onclick="toggleModal('apiKeyModal')" class="text-slate-400 hover:text-white">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
+    <form id="setupForm" onsubmit="handleStart(event)" class="space-y-5">
+      <!-- Input API Key -->
+      <div class="space-y-1.5">
+        <label class="text-xs font-medium text-slate-300">OpenAI API Key (Vision Supported)</label>
+        <input 
+          type="password" 
+          id="apiKeyInput" 
+          placeholder="sk-proj-..." 
+          required 
+          class="w-full bg-dark-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-white transition placeholder-slate-500"
+        />
+        <p class="text-[10px] text-slate-400">API key disimpan lokal di browser Anda (tidak dikirim ke server luar).</p>
+      </div>
 
-            <p class="text-xs text-slate-300 leading-relaxed">
-                API Key tersimpan aman di `localStorage` browser Anda.
-            </p>
+      <!-- Pilihan Trading Style -->
+      <div class="space-y-2">
+        <label class="text-xs font-medium text-slate-300">Pilih Gaya Trading & Timeframe</label>
+        <div class="grid grid-cols-2 gap-2.5">
+          
+          <label class="relative flex flex-col p-3 bg-dark-900 border border-slate-700 rounded-xl cursor-pointer hover:border-brand-500 transition has-[:checked]:border-brand-500 has-[:checked]:bg-brand-500/10">
+            <input type="radio" name="tradingStyle" value="Scalping (M1 + M15)" checked class="sr-only" />
+            <span class="text-xs font-bold text-white">Scalping</span>
+            <span class="text-[10px] text-brand-500 mt-1 font-semibold">M1 (LTF) + M15 (HTF)</span>
+          </label>
 
-            <div class="space-y-2">
-                <label class="text-xs font-medium text-slate-400 block">API Key (sk-proj-...)</label>
-                <input type="password" id="apiKeyInput" placeholder="sk-proj-..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white font-mono focus:border-indigo-500 focus:outline-none">
-            </div>
+          <label class="relative flex flex-col p-3 bg-dark-900 border border-slate-700 rounded-xl cursor-pointer hover:border-brand-500 transition has-[:checked]:border-brand-500 has-[:checked]:bg-brand-500/10">
+            <input type="radio" name="tradingStyle" value="Day Trade (M3 + M30)" class="sr-only" />
+            <span class="text-xs font-bold text-white">Day Trade</span>
+            <span class="text-[10px] text-brand-500 mt-1 font-semibold">M3 (LTF) + M30 (HTF)</span>
+          </label>
 
-            <div class="flex justify-end gap-2 pt-2">
-                <button onclick="toggleModal('apiKeyModal')" class="px-4 py-2 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-lg text-xs font-semibold">Batal</button>
-                <button onclick="saveApiKey()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold">Simpan Key</button>
-            </div>
+          <label class="relative flex flex-col p-3 bg-dark-900 border border-slate-700 rounded-xl cursor-pointer hover:border-brand-500 transition has-[:checked]:border-brand-500 has-[:checked]:bg-brand-500/10">
+            <input type="radio" name="tradingStyle" value="Intraday (M5 + H1)" class="sr-only" />
+            <span class="text-xs font-bold text-white">Intraday</span>
+            <span class="text-[10px] text-brand-500 mt-1 font-semibold">M5 (LTF) + H1 (HTF)</span>
+          </label>
+
+          <label class="relative flex flex-col p-3 bg-dark-900 border border-slate-700 rounded-xl cursor-pointer hover:border-brand-500 transition has-[:checked]:border-brand-500 has-[:checked]:bg-brand-500/10">
+            <input type="radio" name="tradingStyle" value="Swing (M15 + H4)" class="sr-only" />
+            <span class="text-xs font-bold text-white">Swing</span>
+            <span class="text-[10px] text-brand-500 mt-1 font-semibold">M15 (LTF) + H4 (HTF)</span>
+          </label>
+
         </div>
-    </div>
+      </div>
 
-    <script>
-        let currentMode = 'scalp';
-        const modesConfig = {
-            scalp: { name: 'Scalping', htf: 'M15', ltf: 'M1' },
-            day: { name: 'Day Trade', htf: 'M30', ltf: 'M3' },
-            intraday: { name: 'Intraday', htf: 'H1', ltf: 'M5' },
-            swing: { name: 'Swing', htf: 'H4', ltf: 'M15' }
-        };
+      <!-- Submit Button -->
+      <button 
+        type="submit" 
+        class="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 rounded-xl transition duration-200 text-sm shadow-lg shadow-brand-500/25 active:scale-[0.99]"
+      >
+        Buka Terminal Analisis ➔
+      </button>
+    </form>
+  </div>
 
-        const images = { HTF: null, LTF: null };
+  <script>
+    // Cek jika API key sudah tersimpan sebelumnya
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedKey = localStorage.getItem('openai_api_key');
+      if (savedKey) document.getElementById('apiKeyInput').value = savedKey;
+    });
 
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-            loadSavedApiKey();
-            setupDropAndPasteListeners();
-        });
+    function handleStart(e) {
+      e.preventDefault();
+      const apiKey = document.getElementById('apiKeyInput').value.trim();
+      const selectedStyle = document.querySelector('input[name="tradingStyle"]:checked').value;
 
-        function toggleModal(id) {
-            document.getElementById(id).classList.toggle('hidden');
-        }
+      if (!apiKey) {
+        alert('Harap masukkan OpenAI API Key terlebih dahulu!');
+        return;
+      }
 
-        function setTradingMode(mode) {
-            currentMode = mode;
-            const config = modesConfig[mode];
+      // Simpan konfigurasi ke LocalStorage
+      localStorage.setItem('openai_api_key', apiKey);
+      localStorage.setItem('trading_style', selectedStyle);
 
-            document.querySelectorAll('.mode-btn').forEach(btn => {
-                btn.classList.remove('active', 'border-indigo-500/50', 'bg-indigo-600/10');
-                btn.classList.add('border-trade-border', 'bg-slate-900/50');
-            });
-
-            const activeBtn = document.getElementById(`btn-${mode}`);
-            activeBtn.classList.add('active', 'border-indigo-500/50', 'bg-indigo-600/10');
-            activeBtn.classList.remove('border-trade-border', 'bg-slate-900/50');
-
-            document.getElementById('strategyBadge').innerText = config.name.toUpperCase();
-            document.getElementById('htfLabel').innerText = config.htf;
-            document.getElementById('ltfLabel').innerText = config.ltf;
-            document.getElementById('htfTextSpan').innerText = config.htf;
-            document.getElementById('ltfTextSpan').innerText = config.ltf;
-            document.getElementById('badgeHTF').innerText = config.htf;
-            document.getElementById('badgeLTF').innerText = config.ltf;
-        }
-
-        function handleFileSelect(event, type) {
-            const file = event.target.files[0];
-            if (file) processFile(file, type);
-        }
-
-        function processFile(file, type) {
-            if (!file.type.startsWith('image/')) {
-                alert('File harus berupa gambar (PNG, JPG, WEBP)');
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                images[type] = e.target.result;
-                document.getElementById(`preview${type}`).src = e.target.result;
-                document.getElementById(`placeholder${type}`).classList.add('hidden');
-                document.getElementById(`preview${type}Container`).classList.remove('hidden');
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function removeImage(event, type) {
-            event.stopPropagation();
-            images[type] = null;
-            document.getElementById(`file${type}`).value = '';
-            document.getElementById(`placeholder${type}`).classList.remove('hidden');
-            document.getElementById(`preview${type}Container`).classList.add('hidden');
-        }
-
-        function setupDropAndPasteListeners() {
-            ['HTF', 'LTF'].forEach(type => {
-                const zone = document.getElementById(`dropZone${type}`);
-                const fileInput = document.getElementById(`file${type}`);
-
-                zone.addEventListener('click', (e) => {
-                    if (e.target.closest('button')) return;
-                    fileInput.click();
-                });
-
-                ['dragenter', 'dragover'].forEach(name => {
-                    zone.addEventListener(name, (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        zone.classList.add('drag-active');
-                    });
-                });
-
-                ['dragleave', 'drop'].forEach(name => {
-                    zone.addEventListener(name, (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        zone.classList.remove('drag-active');
-                    });
-                });
-
-                zone.addEventListener('drop', (e) => {
-                    const files = e.dataTransfer.files;
-                    if (files.length > 0) processFile(files[0], type);
-                });
-            });
-
-            // Paste Event (Ctrl+V) Support
-            window.addEventListener('paste', (e) => {
-                const items = e.clipboardData.items;
-                for (let item of items) {
-                    if (item.type.indexOf('image') !== -1) {
-                        const blob = item.getAsFile();
-                        if (!images.HTF) {
-                            processFile(blob, 'HTF');
-                        } else if (!images.LTF) {
-                            processFile(blob, 'LTF');
-                        }
-                        break;
-                    }
-                }
-            });
-        }
-
-        function saveApiKey() {
-            const key = document.getElementById('apiKeyInput').value.trim();
-            if (key) {
-                localStorage.setItem('openai_api_key', key);
-                updateApiKeyBadge(true);
-                toggleModal('apiKeyModal');
-            }
-        }
-
-        function loadSavedApiKey() {
-            const key = localStorage.getItem('openai_api_key');
-            if (key) {
-                document.getElementById('apiKeyInput').value = key;
-                updateApiKeyBadge(true);
-            }
-        }
-
-        function updateApiKeyBadge(isSaved) {
-            const text = document.getElementById('apiKeyStatusText');
-            if (isSaved) {
-                text.innerText = "API Key Aktif";
-                text.className = "font-mono text-emerald-400 font-semibold";
-            }
-        }
-
-        function copySystemPrompt() {
-            const text = document.getElementById('promptContent').innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                const btn = document.getElementById('copyPromptBtn');
-                btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Copied!`;
-                lucide.createIcons();
-                setTimeout(() => {
-                    btn.innerHTML = `<i data-lucide="copy" class="w-4 h-4"></i> Copy Prompt`;
-                    lucide.createIcons();
-                }, 2000);
-            });
-        }
-
-        async function analyzeCharts() {
-            const apiKey = localStorage.getItem('openai_api_key');
-            
-            if (!images.HTF || !images.LTF) {
-                alert("Upload kedua gambar screenshot chart (HTF & LTF) terlebih dahulu!");
-                return;
-            }
-
-            if (!apiKey) {
-                toggleModal('apiKeyModal');
-                return;
-            }
-
-            document.getElementById('emptyState').classList.add('hidden');
-            document.getElementById('resultCard').classList.add('hidden');
-            document.getElementById('loadingState').classList.remove('hidden');
-
-            const manualAsset = document.getElementById('assetPair').value.trim();
-            const notes = document.getElementById('userNotes').value || 'None';
-            const modeInfo = modesConfig[currentMode];
-
-            const promptText = `
-You are an expert SMC / Price Action trader. Analyze these two chart images:
-Chart 1: Higher Timeframe (${modeInfo.htf}) for macro structure/trend/key zones.
-Chart 2: Lower Timeframe (${modeInfo.ltf}) for micro trigger/ChoCh/FVG entry setup.
-Context: ${notes}
-
-Task: Auto-detect the trading pair/symbol (e.g. XAUUSD, EURUSD, BTCUSD) from the chart titles/watermark if not manually provided (${manualAsset || "Auto-detect"}).
-
-Respond strictly with a single JSON object containing:
-{
-  "pair": "AUTO-DETECTED PAIR SYMBOL",
-  "signal": "BUY" or "SELL" or "NEUTRAL",
-  "confidence": "88%",
-  "entry": "price range",
-  "sl": "price",
-  "tp1": "price",
-  "tp2": "price",
-  "tp3": "price",
-  "rrr": "1:X",
-  "htfAnalysis": "HTF structure reasoning",
-  "ltfAnalysis": "LTF trigger reasoning",
-  "executionRules": ["rule 1", "rule 2", "rule 3"]
-}
-`;
-
-            try {
-                const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiKey}`
-                    },
-                    body: JSON.stringify({
-                        model: "gpt-4o",
-                        messages: [
-                            {
-                                role: "user",
-                                content: [
-                                    { type: "text", text: promptText },
-                                    { type: "image_url", image_url: { url: images.HTF } },
-                                    { type: "image_url", image_url: { url: images.LTF } }
-                                ]
-                            }
-                        ],
-                        response_format: { type: "json_object" },
-                        max_tokens: 800
-                    })
-                });
-
-                if (!response.ok) {
-                    const errObj = await response.json().catch(() => ({}));
-                    throw new Error(errObj.error?.message || `OpenAI API Error ${response.status}`);
-                }
-
-                const data = await response.json();
-                const result = JSON.parse(data.choices[0].message.content);
-
-                const finalAsset = manualAsset || result.pair || 'XAUUSD';
-                document.getElementById('assetPair').value = finalAsset;
-
-                renderResults(result, finalAsset, modeInfo);
-
-            } catch (err) {
-                alert("Gagal menganalisa chart: " + err.message);
-                document.getElementById('loadingState').classList.add('hidden');
-                document.getElementById('emptyState').classList.remove('hidden');
-            }
-        }
-
-        function loadDemoData() {
-            document.getElementById('emptyState').classList.add('hidden');
-            document.getElementById('loadingState').classList.remove('hidden');
-
-            setTimeout(() => {
-                const mockResult = {
-                    pair: "XAUUSD",
-                    signal: "BUY",
-                    confidence: "90%",
-                    entry: "2384.50 - 2386.10",
-                    sl: "2381.80",
-                    tp1: "2390.00",
-                    tp2: "2394.50",
-                    tp3: "2399.00",
-                    rrr: "1 : 3.4",
-                    htfAnalysis: "HTF (M15) menunjukkan tren Bullish dengan pembalikan arah setelah sweep liquidity pada low sebelumnya. Price mereaksi Demand Orderblock utama.",
-                    ltfAnalysis: "LTF (M1) mengonfirmasi trigger entry dengan Change of Character (ChoCh) ke atas dan meninggalkan Fair Value Gap (FVG) ideal di area 2384.50 - 2386.10.",
-                    executionRules: [
-                        "Eksekusi Buy Limit di area 1-Minute FVG.",
-                        "Geser Stop Loss ke Breakeven (BE) ketika target TP1 (2390.00) tercapai.",
-                        "Manajemen risiko: Maksimal 1% modal per transaksi."
-                    ]
-                };
-
-                const modeInfo = modesConfig[currentMode];
-                const asset = document.getElementById('assetPair').value || mockResult.pair;
-                document.getElementById('assetPair').value = asset;
-                
-                renderResults(mockResult, asset, modeInfo);
-            }, 1000);
-        }
-
-        function renderResults(res, asset, modeInfo) {
-            document.getElementById('loadingState').classList.add('hidden');
-            document.getElementById('resultCard').classList.remove('hidden');
-
-            document.getElementById('resAsset').innerText = (asset || res.pair || 'XAUUSD').toUpperCase();
-            document.getElementById('resStrategy').innerText = `${modeInfo.name.toUpperCase()} (${modeInfo.htf}/${modeInfo.ltf})`;
-            document.getElementById('resTime').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-            const banner = document.getElementById('signalBanner');
-            const sigText = document.getElementById('resSignalType');
-
-            if (res.signal.toUpperCase().includes('BUY')) {
-                sigText.className = "text-3xl font-extrabold tracking-tight text-emerald-400 font-mono flex items-center gap-2";
-                sigText.innerHTML = `<i data-lucide="arrow-up-circle" class="w-8 h-8"></i> BUY / LONG`;
-                banner.className = "glass-panel rounded-2xl p-6 relative overflow-hidden transition border-2 border-emerald-500/40 glow-bull";
-            } else if (res.signal.toUpperCase().includes('SELL')) {
-                sigText.className = "text-3xl font-extrabold tracking-tight text-red-400 font-mono flex items-center gap-2";
-                sigText.innerHTML = `<i data-lucide="arrow-down-circle" class="w-8 h-8"></i> SELL / SHORT`;
-                banner.className = "glass-panel rounded-2xl p-6 relative overflow-hidden transition border-2 border-red-500/40 glow-bear";
-            } else {
-                sigText.className = "text-3xl font-extrabold tracking-tight text-amber-400 font-mono flex items-center gap-2";
-                sigText.innerHTML = `<i data-lucide="minus-circle" class="w-8 h-8"></i> NEUTRAL / WAIT`;
-                banner.className = "glass-panel rounded-2xl p-6 relative overflow-hidden transition border-2 border-amber-500/40";
-            }
-
-            document.getElementById('resConfidence').innerText = `Key Zone Hit (${res.confidence || '85%'})`;
-            document.getElementById('resRRR').innerText = res.rrr;
-
-            document.getElementById('resEntry').innerText = res.entry;
-            document.getElementById('resSL').innerText = res.sl;
-            document.getElementById('resTP1').innerText = res.tp1;
-            document.getElementById('resTP2').innerText = res.tp2;
-            document.getElementById('resTP3').innerText = res.tp3;
-
-            document.getElementById('rationaleHtfLabel').innerText = modeInfo.htf;
-            document.getElementById('rationaleLtfLabel').innerText = modeInfo.ltf;
-            document.getElementById('resHTFReason').innerText = res.htfAnalysis;
-            document.getElementById('resLTFReason').innerText = res.ltfAnalysis;
-
-            const rulesList = document.getElementById('resInvalidationRules');
-            rulesList.innerHTML = '';
-            if (res.executionRules && res.executionRules.length > 0) {
-                res.executionRules.forEach(rule => {
-                    const li = document.createElement('li');
-                    li.innerText = rule;
-                    rulesList.appendChild(li);
-                });
-            }
-
-            lucide.createIcons();
-        }
-    </script>
+      // Pindah ke Halaman Dashboard
+      window.location.href = 'dashboard.html';
+    }
+  </script>
 </body>
 </html>
-```
