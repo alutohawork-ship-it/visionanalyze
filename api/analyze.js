@@ -1,11 +1,24 @@
 // api/analyze.js — Vercel Serverless Function
-// Env var wajib: OPENAI_API_KEY. Opsional: OPENAI_MODEL (default gpt-4o)
+// Env wajib:    OPENAI_API_KEY   (key sk-guts-... dari gutsai.id/console)
+// Env opsional: OPENAI_BASE_URL  (default https://api.gutsai.id/v1)
+//               OPENAI_MODEL     (default claude-sonnet-5.5, harus bisa menerima gambar)
+
+const DEFAULT_BASE = "https://api.gutsai.id/v1";
+const DEFAULT_MODEL = "claude-sonnet-5.5";
 
 const MODES = {
   scalping: { label: "Scalping",    htf: "M15", ltf: "M1" },
   daytrade: { label: "Day Trading", htf: "M30", ltf: "M3" },
   intraday: { label: "Intraday",    htf: "H1",  ltf: "M5" },
   swing:    { label: "Swing",       htf: "H4",  ltf: "M15" },
+};
+
+const HINTS = {
+  401: "API key tidak valid. Cek OPENAI_API_KEY di Vercel.",
+  402: "Saldo Guts AI habis. Top up dulu di gutsai.id/console.",
+  403: "Model ini tidak bisa dipakai dengan key kamu. Coba ganti OPENAI_MODEL.",
+  404: "Model tidak ditemukan. Cek OPENAI_MODEL.",
+  429: "Terlalu banyak permintaan. Coba lagi sebentar.",
 };
 
 const SYSTEM = `Kamu analis trading profesional (Smart Money Concepts, price action, supply & demand, likuiditas).
@@ -22,47 +35,51 @@ Aturan ketat:
 - Baca harga HANYA dari skala harga yang terlihat di chart. Jangan mengarang angka. Jika skala tidak terbaca, signal = NO_TRADE dan jelaskan.
 - BUY: SL < Entry < TP1 < TP2 < TP3. SELL: SL > Entry > TP1 > TP2 > TP3.
 - Keputusan harus konsisten: chart yang sama harus menghasilkan keputusan yang sama.
-- reason_entry: 2 sampai 5 poin singkat, sebutkan bukti dari chart (sweep, CHoCH, FVG, bias).
-- Semua teks dalam Bahasa Indonesia. Balas hanya dengan JSON sesuai skema.`;
+- Semua teks dalam Bahasa Indonesia.
 
-const num = { anyOf: [{ type: "number" }, { type: "null" }] };
+Balas HANYA dengan objek JSON berikut, tanpa teks atau markdown lain:
+{
+  "signal": "BUY | SELL | NO_TRADE",
+  "confidence": <angka 0-100>,
+  "bias": "BULLISH | BEARISH | RANGE",
+  "entry": <angka harga atau null>,
+  "stop_loss": <angka harga atau null>,
+  "tp1": <angka harga atau null>,
+  "tp2": <angka harga atau null>,
+  "tp3": <angka harga atau null>,
+  "reason_entry": ["2 sampai 5 poin singkat, sebut bukti dari chart"],
+  "invalidation": "kondisi yang membatalkan setup",
+  "summary": "ringkasan 1 sampai 2 kalimat",
+  "key_levels": [{"label": "nama level", "price": <angka harga>, "kind": "support | resistance | liquidity | fvg | order_block"}]
+}
+Untuk NO_TRADE, isi entry, stop_loss, tp1, tp2, dan tp3 dengan null.`;
 
-const SCHEMA = {
-  name: "trade_signal",
-  strict: true,
-  schema: {
-    type: "object",
-    additionalProperties: false,
-    required: ["signal", "confidence", "bias", "entry", "stop_loss", "tp1", "tp2", "tp3",
-      "reason_entry", "invalidation", "summary", "key_levels"],
-    properties: {
-      signal: { type: "string", enum: ["BUY", "SELL", "NO_TRADE"] },
-      confidence: { type: "integer" },
-      bias: { type: "string", enum: ["BULLISH", "BEARISH", "RANGE"] },
-      entry: num,
-      stop_loss: num,
-      tp1: num,
-      tp2: num,
-      tp3: num,
-      reason_entry: { type: "array", items: { type: "string" } },
-      invalidation: { type: "string" },
-      summary: { type: "string" },
-      key_levels: {
-        type: "array",
-        items: {
-          type: "object",
-          additionalProperties: false,
-          required: ["label", "price", "kind"],
-          properties: {
-            label: { type: "string" },
-            price: { type: "number" },
-            kind: { type: "string", enum: ["support", "resistance", "liquidity", "fvg", "order_block"] },
-          },
-        },
-      },
-    },
-  },
-};
+function parseJson(text) {
+  return JSON.parse(String(text || "").replace(/```json|```/g, "").trim());
+}
+
+const num = v => (typeof v === "number" && Number.isFinite(v) ? v : null);
+
+// Rapikan bentuk jawaban model agar selalu punya semua field.
+function normalize(s) {
+  return {
+    signal: ["BUY", "SELL"].includes(s.signal) ? s.signal : "NO_TRADE",
+    confidence: Math.max(0, Math.min(100, Math.round(Number(s.confidence) || 0))),
+    bias: ["BULLISH", "BEARISH", "RANGE"].includes(s.bias) ? s.bias : "RANGE",
+    entry: num(s.entry),
+    stop_loss: num(s.stop_loss),
+    tp1: num(s.tp1),
+    tp2: num(s.tp2),
+    tp3: num(s.tp3),
+    reason_entry: Array.isArray(s.reason_entry) ? s.reason_entry.map(String).slice(0, 6) : [],
+    invalidation: String(s.invalidation || ""),
+    summary: String(s.summary || ""),
+    key_levels: (Array.isArray(s.key_levels) ? s.key_levels : [])
+      .filter(k => k && num(k.price) !== null)
+      .slice(0, 12)
+      .map(k => ({ label: String(k.label || ""), price: k.price, kind: String(k.kind || "") })),
+  };
+}
 
 // Pastikan urutan level masuk akal. Jika tidak, sinyal dibatalkan.
 function finalize(s) {
@@ -96,27 +113,30 @@ module.exports = async (req, res) => {
       !images.every(i => typeof i === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(i) && i.length < 6_000_000)) {
     return res.status(400).json({ error: "Unggah dua chart: HTF dan LTF." });
   }
+
   const symbol = String(pair).toUpperCase().replace(/[^A-Z0-9._/-]/g, "").slice(0, 12) || "UNKNOWN";
+  const base = (process.env.OPENAI_BASE_URL || DEFAULT_BASE).replace(/\/+$/, "");
+  const model = process.env.OPENAI_MODEL || DEFAULT_MODEL;
 
   try {
-    const r = await fetch("https://api.openai.com/v1/chat/completions", {
+    const r = await fetch(`${base}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || "gpt-4o",
+        model,
         temperature: 0,
         max_tokens: 1500,
-        response_format: { type: "json_schema", json_schema: SCHEMA },
+        response_format: { type: "json_object" },
         messages: [
           { role: "system", content: SYSTEM },
           {
             role: "user",
             content: [
               { type: "text", text: `Pair: ${symbol}. Mode: ${m.label}. Gambar 1 = HTF ${m.htf}, gambar 2 = LTF ${m.ltf}.` },
-              ...images.map(url => ({ type: "image_url", image_url: { url, detail: "high" } })),
+              ...images.map(url => ({ type: "image_url", image_url: { url } })),
             ],
           },
         ],
@@ -124,12 +144,23 @@ module.exports = async (req, res) => {
       signal: AbortSignal.timeout(55000),
     });
 
-    const data = await r.json();
-    if (!r.ok) return res.status(502).json({ error: data.error?.message || "Permintaan ke OpenAI gagal." });
+    const raw = await r.text();
+    if (!r.ok) {
+      console.error("gateway error", r.status, raw.slice(0, 500));
+      return res.status(502).json({ error: HINTS[r.status] || "Permintaan ke AI gagal. Coba lagi." });
+    }
 
-    const out = JSON.parse(data.choices[0].message.content);
-    return res.status(200).json(finalize(out));
+    let parsed;
+    try {
+      parsed = parseJson(JSON.parse(raw).choices?.[0]?.message?.content);
+    } catch {
+      console.error("bad model output", raw.slice(0, 500));
+      return res.status(502).json({ error: "Jawaban AI tidak bisa dibaca. Coba analisa ulang." });
+    }
+
+    return res.status(200).json(finalize(normalize(parsed)));
   } catch (e) {
+    console.error("analyze failed", e);
     const msg = e.name === "TimeoutError"
       ? "Analisa terlalu lama. Coba gambar yang lebih kecil."
       : "Terjadi kesalahan di server.";
